@@ -100,6 +100,7 @@ company_total["Всего"] = company_total["Отправлено"] + company_to
 company_total["Стоимость"] = (company_total["Всего"] * COST_PER_SEGMENT).round(4)
 company_total = company_total.reset_index()
 company_total["Имя/Номер компании"] = company_total["index"].map(lambda num: company_name_map.get(num, num))
+company_numbers = company_total["index"].tolist()
 company_total = company_total[["Имя/Номер компании", "Отправлено", "Получено", "Всего", "Стоимость"]]
 st.dataframe(company_total)
 
@@ -124,19 +125,30 @@ top_20_clients = external_total.sort_values("Всего", ascending=False).head(
 top_20_clients = top_20_clients.rename(columns={"index": "Номер клиента"})
 st.dataframe(top_20_clients)
 
-# 🔍 Поиск по номеру
-st.subheader("🔍 Поиск по номеру (любой: клиент или компания)")
-search_number = st.text_input("Введите номер, например: 13134843120")
+# 📞 ТОП-10 внешних номеров для выбранного номера компании
+st.subheader("📞 ТОП-10 внешних номеров для выбранного номера компании")
+selected_company = st.selectbox(
+    "Выберите номер компании",
+    company_numbers,
+    format_func=lambda num: f"{company_name_map.get(num, num)} ({num})"
+)
 
-if search_number:
-    sent = df[(df["Recipient Number"] == search_number)]
-    received = df[(df["Sender Number"] == search_number)]
+outgoing = (
+    df[(df["Direction"] == "Outbound") & (df["Sender Number"] == selected_company)]
+    .groupby("Recipient Number")["Segment Count"]
+    .sum()
+    .rename("Отправлено")
+)
 
-    st.write(f"📤 Отправлено на этот номер: {len(sent)} сообщений ({sent['Segment Count'].sum()} сегментов)")
-    st.write(f"📥 Получено от этого номера: {len(received)} сообщений ({received['Segment Count'].sum()} сегментов)")
+incoming = (
+    df[(df["Direction"] == "Inbound") & (df["Recipient Number"] == selected_company)]
+    .groupby("Sender Number")["Segment Count"]
+    .sum()
+    .rename("Получено")
+)
 
-    with st.expander("📤 Исходящие этому номеру"):
-        st.dataframe(sent[["Date / Time", "Sender Number", "Recipient Number", "Segment Count"]])
-
-    with st.expander("📥 Входящие от этого номера"):
-        st.dataframe(received[["Date / Time", "Sender Number", "Recipient Number", "Segment Count"]])
+top_numbers = pd.concat([outgoing, incoming], axis=1).fillna(0).astype(int)
+top_numbers["Всего"] = top_numbers["Отправлено"] + top_numbers["Получено"]
+top_numbers = top_numbers.sort_values("Всего", ascending=False).head(10).reset_index()
+top_numbers = top_numbers.rename(columns={"index": "Номер"})
+st.dataframe(top_numbers)
