@@ -1,19 +1,18 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from pathlib import Path
 
 st.set_page_config(layout="wide")
 st.title("📊 SMS Dashboard")
 
 # 📥 Загрузка SMS-файла
-sms_files = list(Path(".").glob("SMS*.csv"))
-if not sms_files:
-    st.warning("Файл, начинающийся с 'SMS', не найден.")
+uploaded_file = st.file_uploader("Загрузите CSV-файл", type=["csv"])
+if uploaded_file is None:
+    st.warning("Пожалуйста, загрузите CSV-файл, содержащий данные SMS.")
     st.stop()
 
-df = pd.read_csv(sms_files[0], parse_dates=["Date / Time"])
-st.success(f"Загружен файл: {sms_files[0].name}")
+df = pd.read_csv(uploaded_file, parse_dates=["Date / Time"])
+st.success(f"Загружен файл: {uploaded_file.name}")
 
 df = df[df["Message Type"] == "SMS"].copy()
 df["Date"] = df["Date / Time"].dt.date
