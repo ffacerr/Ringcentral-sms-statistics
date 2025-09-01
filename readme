@@ -3,3 +3,5 @@ App for observing sms statistics from Ringcentral
 You can use it via https://smsstat-xn9w2rmhopjcfvzpefnapp.streamlit.app/
 
 Before using you need to download sms log from service.ringcentral.com using admin account. Go to Reports -> SMS Log -> Download
+
+You can deploy it on your own server on https://streamlit.io
